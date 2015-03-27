@@ -1,265 +1,177 @@
 <!DOCTYPE html>
-<html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" lang="ru">
+<html style="height: 100%">
 <head>
-    <style>
-        .d {
-            display: inline-block;
-            width: 100px;
-            height: 40px;
-            background: #b2dba1;
-            border: 1px solid gray;
-            margin: 5px;
-        }
-    </style>
+    <meta charset="utf-8">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="tmsSign.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" media="all"/>
 </head>
 <body>
-<div>
-    <button onclick="tmsSign.getInstance().execute('red');">button 1</button>
-    <button  onclick="tmsSign.getInstance().execute('green');">button 2</button>
-    <button>button 3</button>
+<div class="container">
+    <div class="pannel">
+        <button id="btnGetNew" class="myButton" onclick="getNewMails();">Получить новые</button>
+        <!--        <button class="myButton">пометить</button>-->
+    </div>
+    <div class="data">
+        <table>
+            <thead>
+            <tr>
+                <th>Тема</th>
+                <th style="width: 150px;">Отправитель</th>
+                <th style="width: 150px;">Дата</th>
+                <th style="width: 150px;">Действия</th>
+            </tr>
+            </thead>
+            <tbody id="mails">
+            <tr>
+                <td>Тестовое письмо</td>
+                <td>noanswer@mysite.ru</td>
+                <td>20 марта 2015</td>
+                <td>
+                    <button class="myButton" disabled >Удалить</button>
+                </td>
+            </tr>
+            <tr>
+                <td>Тестовое письмо</td>
+                <td>noanswer@mysite.ru</td>
+                <td>20 марта 2015</td>
+                <td>
+                    <button class="myButton" disabled >Удалить</button>
+                </td>
+            </tr>
+            <tr>
+                <td>Тестовое письмо</td>
+                <td>noanswer@mysite.ru</td>
+                <td>20 марта 2015</td>
+                <td>
+                    <button class="myButton" disabled >Удалить</button>
+                </td>
+            </tr>
+            <tr>
+                <td>Тестовое письмо</td>
+                <td>noanswer@mysite.ru</td>
+                <td>20 марта 2015</td>
+                <td>
+                    <button class="myButton" disabled >Удалить</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
 </div>
-<div>
-    <div id="d1" class="d">1</div>
-    <div id="d2" class="d">2</div>
-    <div id="d3" class="d">3</div>
+<div class="left">
+    <h1>MailBox</h1>
+
+    <ul>
+        <li class="inbox">Входящие <span id="num"></span></li>
+        <li>Удаленные</li>
+        <li>Спам</li>
+    </ul>
 </div>
+
 
 
 <script>
+    // список новых писем
+    var NewMails = [];
 
-    var tmsSign = (function () {
-        var tmsSignInstance;
+    //получает новые письма
+    function getNewMails() {
+        //some code to get new emails
+        var new_mails_from_server = [
+            {title: 'Новое уведомление', date: '27 марта 2015', from: 'Лучший друг'}
+        ];
 
-        var createTmsSignInstance = function () {
-            var SIGNALS = [];
+        var n = new_mails_from_server.length;
+        for (i = 0; i < n; i++) {
+            addRecievedMail(new_mails_from_server[i]);
+        }
 
+    }
 
-            var tmsSignall = function () {
-                /**
-                 *  массив слотов
-                 */
-                var SLOTS = [];
+    //Добавляет новое письмо в интерфейс
+    function addRecievedMail(mail) {
+        NewMails.push(mail);
 
-                /**
-                 *  ID слота
-                 */
-                var ID = null;
+        var tr = $('<tr/>');
+        tr.append($('<td/>').text(mail.title));
+        tr.append($('<td/>').text(mail.from));
+        tr.append($('<td/>').text(mail.date));
+        tr.append($('<td/>').append($('<button/>').text('Удалить').addClass('myButton').bind('click', removeMail)));
 
-                /**
-                 * Устанавливает ID слота
-                 */
-                this.setID = function (id) {
-                    if (id === undefined || id === null || id == '')return false;
+        $('#mails tr:first').before(tr);
 
-                    ID = id;
-                    return true;
-                }
+        tmsSign.getInstance().execute('new_message'); // иннициируем сигналл
+    }
 
-                /**
-                 * Возвраает Id слота
-                 * @return string
-                 */
-                this.getId = function () {
-                    return ID;
-                }
+    // обновляет количество непрочтенных писем во входящих
+    function refreshUnreaded() {
+        var n = NewMails.length;
+        if (n)$('#num').text('(' + n + ')');
+        else $('#num').text('');
+    }
 
-                /**
-                 * Возвращает позицию слота в списке слотов
-                 * @return int or False
-                 */
-                this.getSlotPosition = function (slot) {
-                    if (slot === undefined || slot == '')return false;
+    // делает красным входящие
+    function makeRed(){
+        $('.inbox').css('color','red');
+    }
 
-                    var n = SLOTS.length;
-                    for (i = 0; i < n; i++) {
-                        if (SLOTS[i].slot !== undefined && SLOTS[i].slot == slot) {
-                            return i;
-                        }
-                    }
-                    return false;
-                }
+    //делает серым входящие
+    function makeGray(){
+        $('.inbox').css('color','#666');
+    }
 
-                /**
-                 * делает попытку удалить слот
-                 * @return boolean
-                 */
-                this.removeSlot = function (slot) {
-                    if (slot === undefined || slot == '')return false;
-                    var pos = this.getSlotPosition(slot);
-                    if (pos !== false) {
-                        SLOTS.splice(pos, 1);
-                    }
-                    return true;
-                }
+    // удаляет письмо
+    function removeMail(){
+        NewMails =[];
+        $('#mails').find('tr:first').remove();
+        tmsSign.getInstance().execute('rm_message');  // иннициируем сигналл
 
-                /**
-                 * Делает поптыку вернуть слот
-                 * @return {}
-                 */
-                this.getSlot = function (slot) {
-                    if (slot === undefined || signall == '')return false;
-                    var pos = this.getSlotPosition(slot);
-                    if (pos !== false) {
-                        return SLOTS[pos];
-                    }
-                    return false;
-                }
-
-                /**
-                 * Делает поптыку создать слот или пересоздать
-                 * @return boolean
-                 */
-                this.setSlot = function (slot, action) {
-                    if (slot === undefined || slot == '')return false;
-                    if (action === undefined || action == '')return false;
-
-                    this.removeSlot(slot);
-
-                    SLOTS.push({slot: slot, action: action});
-                    return true;
-
-                }
-
-                /**
-                 * Делает попытку выполнить все действия слота
-                 */
-                this.execute = function () {
-                    try {
-                        var n = SLOTS.length;
-                        for (var i = 0; i < n; i++) {
-                            SLOTS[i].action();
-                        }
-                    } catch (exception_var) {
-                    }
-                }
+    }
 
 
+    // описание сигнала new_message, срабатывающего при получении письма
+    new_message_data = {
+        id: 'new_message'
+        , slots: [
+            {
+                id: 'red_text', action: makeRed
             }
-
-            /**
-             * Делает попытку исполнить сигнал
-             * @param string signall
-             */
-            this.execute = function(signall){
-                var s= this.getSignall(signall);
-                if(s===false)return false;
-                s.execute();
+            , {
+                id: 'refresh_new_num', action: refreshUnreaded
             }
-
-            this.appendSignall = function(params){
-                if(params === undefined)return false;
-                if(params.id ===undefined || params.id=='')return false;
-
-                s = this.setSignall(params.id);
-
-                if(params.slots!==undefined){
-                    n = params.slots.length;
-                    for(i=0;i<n;i++){
-                        if(params.slots[i].id!==undefined && params.slots[i].id!='' && params.slots[i].action!==undefined){
-                            s.setSlot(params.slots[i].id, params.slots[i].action);
-                        }
-                    }
-                }
-            }
-
-            /**
-             * Делает попытку вернуть сигналл по его сигнатуре
-             * @param string signall
-             * @return {} or false
-             */
-            this.setSignall = function (signall) {
-                if (signall === undefined || signall == '')return false;
-
-                this.removeSignall(signall);
-
-                s = new tmsSignall();
-                s.setID(signall)
-                SIGNALS.push(s);
-                return s;
-
-            }
-
-            /**
-             * Делает попытку вернуть суть сигнала
-             * @param string signall
-             * @returns {signall, action} or False
-             */
-            this.getSignall = function (signall) {
-                if (signall === undefined || signall == '')return false;
-                var pos = this.getSignalPosition(signall);
-                if (pos !== false) {
-                    return SIGNALS[pos];
-                }
-                return false;
-            }
-
-            /**
-             *  Делает попытку удалить сигнал по его сигнатуре
-             *  @param string signal
-             *  @return boolean
-             */
-            this.removeSignall = function (signall) {
-                if (signall === undefined || signall == '')return false;
-                var pos = this.getSignalPosition(signall);
-                if (pos !== false) {
-                    SIGNALS.splice(pos, 1);
-                }
-                return true;
-            }
-
-            /**
-             * Возвращает позицию сигнала в списке сигналов по его сигнатуре
-             * @param string signall
-             * @returns int or False
-             */
-            this.getSignalPosition = function (signall) {
-                if (signall === undefined || signall == '')return false;
-
-                var n = SIGNALS.length;
-                for (i = 0; i < n; i++) {
-                    if (SIGNALS[i].getId() !== undefined && SIGNALS[i].getId() == signall) {
-                        return i;
-                    }
-                }
-                return false;
-            }
-
-            return this;
-        };
-
-        return {
-            getInstance: function () {
-                if (!tmsSignInstance) {
-                    tmsSignInstance = createTmsSignInstance();
-                }
-                return tmsSignInstance;
-            }
-        };
-    })();
-
-</script>
-
-<script>
-
-    inst1 = tmsSign.getInstance();
-
-    red_sign = inst1.setSignall('red');
-    red_sign.setSlot('act1', function(){document.getElementById('d1').innerText = 'act1';})
-    red_sign.setSlot('act2', function(){document.getElementById('d2').innerText = 'act2';})
-    red_sign.setSlot('act3', function(){document.getElementById('d3').innerText = 'act3';})
-
-    green_signal = {
-        id: 'green'
-        ,slots: [
-            {id: 'green_act1', action : function(){document.getElementById('d1').innerText = 'green act1';} }
-            ,{id: 'green_act2', action : function(){document.getElementById('d2').innerText = 'green act2';} }
-            ,{id: 'green_act3', action : function(){document.getElementById('d3').innerText = 'green act3';} }
         ]
     }
 
-    tmsSign.getInstance().appendSignall(green_signal);
+    // Описание сигнала rm_message, срабатывающего при удалении письма
+    rm_message_data = {
+        id: 'rm_message'
+        , slots: [
+            {
+                id: 'gray_text', action: makeGray
+            }
+            , {
+                id: 'refresh_new_num', action: refreshUnreaded
+            }
+            , {
+                id: 'enable_btnGetNew', action: function(){ $('#btnGetNew').prop('disabled',false);}
+            }
+        ]
+    }
 
+    tmsSign.getInstance().appendSignall(new_message_data); // инициализируем сигналл
+    tmsSign.getInstance().appendSignall(rm_message_data);  // инициализируем сигналл
 
+    // Для сигнала new_message можно динамически добавить слотов с обработчиками
+    // Получаем сигналл new_message
+    var new_message_signal = tmsSign.getInstance().getSignall('new_message');
+    // Добавляем новый слот
+    if(new_message_signal){
+        new_message_signal.setSlot('disable_btnGetNew', function(){
+            $('#btnGetNew').prop('disabled',true);
+        })
+    }
 
 
 </script>
